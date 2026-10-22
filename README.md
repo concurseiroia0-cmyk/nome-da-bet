@@ -88,14 +88,28 @@ npm run typecheck -w server -w client      # checagem de tipos
 - **Entrar / Criar conta** — e-mail + senha (bcrypt), sessão JWT em cookie
   httpOnly; registro dá 1.000 créditos fictícios.
 - **Lobby** — saldo no topo, card da Roleta de Bolas ativa, cards "Em breve"
-  para os demais jogos, botão *"Recarregar créditos de teste"*.
-- **Roleta de Bolas** — campo de aposta com atalhos (mín, ½, 2x, máx), botão
-  GIRAR, legenda das 5 bolas com probabilidade/multiplicador, último
-  resultado, últimas 10 rodadas, regras + RTP teórico. Animação: bolas em
-  círculo aceleram e desaceleram até parar na bola sorteada; vencedora com
-  brilho e partículas; **bola preta** com flash + tremor + "10x"; **bronze**
-  mostra "Tentativa grátis!" e gira de novo sem débito. Botão desabilitado
-  durante toda a animação. Opções: *reduzir animações* e *som*.
+  para os demais jogos, botão *"Recarregar créditos de teste"*.- **Roleta de Bolas (fita horizontal, estilo PES myClub, arte própria)** —
+  fita circular infinita da direita para a esquerda, marcador fixo no centro
+  (anel luminoso com miras), bola central em escala 1,15x com brilho, cenário
+  de estádio escuro com holofote e silhueta, bolas em CSS/SVG (gradiente
+  radial metálico + emblema estrela original). Abaixo: saldo, aposta com
+  atalhos (mín, ½, 2x, máx), botão GIRAR (Enter/Espaço), barra com legenda
+  das 5 bolas, probabilidade de cada uma e último resultado, últimas 10
+  rodadas, regras + RTP teórico. Movimento: aceleração (~0,6 s), cruzeiro
+  (~1 s) e desaceleração easeOutQuart (4–6 s) com micro-ajuste final — para
+  exatamente sobre uma ocorrência da bola sorteada a ≥ 40 bolas; tick sonoro
+  que espaça conforme desacelera; **bola preta** com flash + tremor + "10x";
+  **bronze** mostra "Tentativa grátis!" e gira de novo sem débito. Botão
+  desabilitado durante toda a animação. Opções: *reduzir animações* (fade)
+  e *som*. **A fita é neutra**: cada posição usa as probabilidades
+  configuradas, sem vizinhança manipulada (a proibição de "quase ganhi"
+  fabricado é regra da spec 8.2).
+- **Modo Consciência (educativo, ligável no topo do jogo)** — painel que
+  nomeia as técnicas de design (reforço de razão variável, antecipação/
+  dopamina, efeito sensorial, perdas disfarçadas de vitória, viés do
+  quase-ganho) e mostra os números reais da sessão: total apostado/recebido,
+  líquido, RTP real vs. teórico, tempo jogado, estimativa de rodadas até
+  zerar o saldo e gráfico do saldo com a linha da expectativa matemática.
 - **Histórico** — lista paginada de todas as rodadas (aposta, bola,
   multiplicador, retorno, saldo antes/depois).
 - **Admin** (papel `admin`) — editor de probabilidades/multiplicadores com

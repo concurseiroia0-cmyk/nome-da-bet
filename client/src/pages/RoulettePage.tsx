@@ -1,14 +1,14 @@
 /**
- * Página da Roleta de Bolas.
+ * Página da Roleta de Bolas HORIZONTAL (spec 8).
  *
- * O resultado JÁ vem sorteado do servidor; aqui só animamos e exibimos.
- * O botão GIRAR fica desabilitado durante toda a animação — inclusive a
- * tentativa grátis automática.
+ * O resultado JÁ vem sorteado do servidor; aqui só animamos e exibimos. O
+ * botão GIRAR fica desabilitado durante toda a animação — inclusive a
+ * tentativa grátis automática. O Modo Consciência (educativo) mostra as
+ * técnicas de design e os números reais da sessão.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BALLS,
-  BALL_HEX,
   BALL_LABEL,
   CENTS_PER_CREDIT,
   type Ball,
@@ -17,7 +17,9 @@ import {
 } from '@shared';
 import { api, ApiError } from '../api.ts';
 import { useAuth } from '../auth.tsx';
-import { RouletteWheel, WinnerParticles } from '../components/RouletteWheel.tsx';
+import { TapeRoulette } from '../components/TapeRoulette.tsx';
+import { WinnerParticles } from '../components/Particles.tsx';
+import { ConsciencePanel, type SessionStats } from '../components/ConsciencePanel.tsx';
 import { playSound } from '../sound.ts';
 import { formatCredits, formatMultiplier, formatPercent, formatRtp, newIdempotencyKey } from '../utils.ts';
 
@@ -42,6 +44,14 @@ export function RoulettePage() {
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [conscience, setConscience] = useState(false);
+  const [session, setSession] = useState<SessionStats>({
+    totalBet: 0,
+    totalPaid: 0,
+    rounds: 0,
+    startedAt: Date.now(),
+  });
+  const [chartHistory, setChartHistory] = useState<RoundStepDTO[]>([]);
   const settledResolver = useRef<(() => void) | null>(null);
   const busy = phase !== 'idle';
 
@@ -49,15 +59,8 @@ export function RoulettePage() {
 
   useEffect(() => {
     api.rouletteConfig().then(setConfig).catch(() => setConfig(null));
-    loadRecent();
-    return () => {
-      document.body.classList.remove('reduce-motion');
-    };
+    void loadRecent();
   }, []);
-
-  useEffect(() => {
-    document.body.classList.toggle('reduce-motion', reduceMotion);
-  }, [reduceMotion]);
 
   async function loadRecent() {
     try {
@@ -68,24 +71,35 @@ export function RoulettePage() {
     }
   }
 
+  const loadChart = useCallback(async () => {
+    try {
+      const r = await api.history(1, 100);
+      setChartHistory(r.items);
+    } catch {
+      // gráfico é opcional
+    }
+  }, []);
+
+  useEffect(() => {
+    if (conscience) void loadChart();
+  }, [conscience, loadChart]);
+
   const waitSettled = () => new Promise<void>((r) => (settledResolver.current = r));
   const handleSettled = useCallback(() => {
     settledResolver.current?.();
     settledResolver.current = null;
   }, []);
 
-  async function animateStep(step: RoundStepDTO) {
+  async function animateStep(step: RoundStepDTO, isFirstStep: boolean) {
     // Resultado vem do servidor; animação apenas o exibe. O resultado é
-    // definido ANTES de a roda girar (mesmo batch de estado).
+    // definido ANTES de a fita girar (mesmo batch de estado).
     setRevel({ step, showParticles: false, isBlackFlash: false });
     setSpinNonce((n) => n + 1);
     const settled = waitSettled();
-    if (!reduced) {
-      // "ticks" sonoros durante a rotação
-      for (let i = 0; i < 14; i++) {
-        setTimeout(() => playSound('tick', muted), i * (120 + i * 22));
-      }
+    if (isFirstStep) {
+      setSession((s) => ({ ...s, rounds: s.rounds + 1, totalBet: s.totalBet + step.bet }));
     }
+    setSession((s) => ({ ...s, totalPaid: s.totalPaid + step.payout }));
     await settled;
 
     const isBlack = step.ball === 'preta';
@@ -119,7 +133,7 @@ export function RoulettePage() {
       const res = await api.spin(bet, newIdempotencyKey());
 
       // Etapa 1 (paga)
-      await animateStep(res.steps[0]);
+      await animateStep(res.steps[0], true);
 
       // Etapa 2: tentativa grátis (mesma transação no servidor)
       if (res.steps.length > 1) {
@@ -127,12 +141,13 @@ export function RoulettePage() {
         await sleep(reduced ? 400 : 1500);
         setRevel(null);
         setPhase('spinning');
-        await animateStep(res.steps[1]);
+        await animateStep(res.steps[1], false);
       }
 
       setPhase('revealing');
       await sleep(reduced ? 300 : 900);
       await Promise.all([refresh(), loadRecent()]);
+      if (conscience) await loadChart();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao girar.');
       await refresh();
@@ -162,9 +177,18 @@ export function RoulettePage() {
       <div className="spread mt">
         <div>
           <h1 className="page-title">Roleta de Bolas</h1>
-          <p className="page-sub">Inspirada no PES myClub — créditos fictícios, sem valor real.</p>
+          <p className="page-sub">
+            Fita horizontal estilo PES myClub — arte original, créditos fictícios sem valor real.
+          </p>
         </div>
         <div className="a11y-bar">
+          <button
+            className={`toggle-chip ${conscience ? 'on' : ''}`}
+            aria-pressed={conscience}
+            onClick={() => setConscience((v) => !v)}
+          >
+            {conscience ? '🧠 ' : ''}Modo Consciência
+          </button>
           <button
             className={`toggle-chip ${reduceMotion ? 'on' : ''}`}
             aria-pressed={reduceMotion}
@@ -183,31 +207,29 @@ export function RoulettePage() {
       </div>
 
       <div className="roulette-layout">
-        {/* ---------- Palco da roleta ---------- */}
+        {/* ---------- Palco da fita ---------- */}
         <section>
           <div
-            className={`wheel-stage${revel?.isBlackFlash ? ' black-flash' : ''}${
+            className={`roulette-stage${revel?.isBlackFlash ? ' black-flash' : ''}${
               revel?.isBlackFlash && !reduced ? ' shaking' : ''
             }`}
-            aria-live="polite"
           >
-            <RouletteWheel
+            <TapeRoulette
               result={revel?.step.ball ?? null}
               spinNonce={spinNonce}
               reduced={reduced}
+              config={config}
               onSettled={handleSettled}
+              onTick={() => playSound('tick', muted)}
             />
             {revel?.showParticles && <WinnerParticles intensity={revel.isBlackFlash ? 36 : 18} />}
 
-            <div className="reveal">
+            <div className="reveal" aria-live="polite">
               {freeSpinActive ? (
                 <div className="free-spin-msg">TENTATIVA GRÁTIS! 🎉</div>
               ) : revel ? (
                 <>
-                  <span
-                    className="reveal-ball"
-                    style={{ color: BALL_HEX[revel.step.ball] }}
-                  >
+                  <span className="reveal-ball" style={{ opacity: 1 }}>
                     {BALL_LABEL[revel.step.ball]}
                     {revel.step.isFreeSpin ? ' • tentativa grátis' : ''}
                   </span>
@@ -224,7 +246,7 @@ export function RoulettePage() {
             </div>
           </div>
 
-          {/* Legenda das 5 bolas */}
+          {/* Barra: legenda das 5 bolas, probabilidade e último resultado */}
           <div className="card mt ball-legend" style={{ display: 'grid', gap: 6 }}>
             <div className="spread" style={{ marginBottom: 4 }}>
               <h3 style={{ margin: 0 }}>Bolas</h3>
@@ -242,7 +264,8 @@ export function RoulettePage() {
             ))}
             <p className="muted small" style={{ margin: '6px 0 0' }}>
               O multiplicador é o <b>retorno total da rodada</b> (já inclui a aposta). Bronze = 1
-              tentativa grátis sem débito e sem encadeamento.
+              tentativa grátis sem débito e sem encadeamento. A fita é gerada de forma neutra com
+              as probabilidades configuradas — sem vizinhança manipulada.
             </p>
           </div>
         </section>
@@ -299,7 +322,7 @@ export function RoulettePage() {
             {config && (
               <p className="muted small center" style={{ marginBottom: 0 }}>
                 Limites: {formatCredits(config.minBet)} – {formatCredits(config.maxBet)} • v
-                {config.version}
+                {config.version} • Enter/Espaço gira
               </p>
             )}
           </div>
@@ -315,7 +338,13 @@ export function RoulettePage() {
                   <span
                     key={r.roundId}
                     className={`mh-item ${
-                      r.payout > 0 ? (r.multiplier >= 500 ? 'big' : 'win') : r.isFreeSpin && r.ball === 'bronze' ? 'free' : 'loss'
+                      r.payout > 0
+                        ? r.multiplier >= 500
+                          ? 'big'
+                          : 'win'
+                        : r.isFreeSpin && r.ball === 'bronze'
+                          ? 'free'
+                          : 'loss'
                     }`}
                     title={`Aposta ${formatCredits(r.bet)} • retorno ${formatCredits(r.payout)}`}
                   >
@@ -350,6 +379,17 @@ export function RoulettePage() {
           </div>
         </aside>
       </div>
+
+      {/* ---------- Modo Consciência (educativo) ---------- */}
+      {conscience && config && (
+        <ConsciencePanel
+          rtp={config.rtp}
+          balance={user?.balance ?? 0}
+          bet={bet}
+          session={session}
+          history={chartHistory}
+        />
+      )}
     </div>
   );
 }

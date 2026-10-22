@@ -353,16 +353,16 @@ label.field input:focus {
   }
 }
 
-.wheel-stage {
+/* ---------- Palco da fita horizontal (spec 8.1) ---------- */
+.roulette-stage {
   position: relative;
-  background: radial-gradient(circle at 50% 40%, #1a1a26, #08080c 75%);
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 18px 10px 22px;
   overflow: hidden;
+  background: #08080c;
   text-align: center;
 }
-.wheel-stage.black-flash::after {
+.roulette-stage.black-flash::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -374,7 +374,7 @@ label.field input:focus {
   0% { opacity: 0.9; }
   100% { opacity: 0; }
 }
-.wheel-stage.shaking {
+.roulette-stage.shaking {
   animation: shake 0.5s ease-in-out;
 }
 @keyframes shake {
@@ -385,74 +385,166 @@ label.field input:focus {
   80% { transform: translateX(4px); }
 }
 
-.wheel {
+/* Cenário: estádio escuro em degradê + holofote + silhueta (arte própria) */
+.stage {
+  --ball: 96px;
+  --tint: #1a1a26;
   position: relative;
-  --wheel-r: calc(min(320px, 78vw) / 2 - 24px);
-  width: min(320px, 78vw);
-  height: min(320px, 78vw);
-  margin: 8px auto;
-  border-radius: 50%;
-  border: 3px solid var(--gold-dim);
-  background: radial-gradient(circle, #12121a 55%, #05050a 100%);
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.15) inset, 0 0 18px rgba(0, 0, 0, 0.6);
+  height: 250px;
+  overflow: hidden;
 }
-.wheel-ball {
+.stage-scenario {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(520px 190px at 50% -30px, rgba(255, 255, 255, 0.16), transparent 70%),
+    linear-gradient(#0b0b16 0%, #15152b 55%, #0a0a12 100%);
+}
+.stage-tint {
+  position: absolute;
+  inset: 0;
+  background: var(--tint);
+  opacity: 0.14;
+  mix-blend-mode: screen;
+  transition: background 0.6s ease;
+}
+.stage-silhouette {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  background:
+    radial-gradient(circle at 6% 100%, #05050a 22px, transparent 23px),
+    radial-gradient(circle at 18% 100%, #05050a 26px, transparent 27px),
+    radial-gradient(circle at 31% 100%, #05050a 20px, transparent 21px),
+    radial-gradient(circle at 44% 100%, #05050a 27px, transparent 28px),
+    radial-gradient(circle at 57% 100%, #05050a 21px, transparent 22px),
+    radial-gradient(circle at 70% 100%, #05050a 25px, transparent 26px),
+    radial-gradient(circle at 83% 100%, #05050a 20px, transparent 21px),
+    radial-gradient(circle at 95% 100%, #05050a 26px, transparent 27px),
+    linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+  opacity: 0.9;
+}
+.stage-vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 90px 30px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+}
+.stage.fading .tape {
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+/* Fita circular infinita */
+.tape {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.ball-slot {
   position: absolute;
   top: 50%;
-  left: 50%;
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 800;
-  color: #000;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6), inset 0 -4px 8px rgba(0, 0, 0, 0.35),
-    inset 0 4px 6px rgba(255, 255, 255, 0.55);
+  left: 0;
+  width: var(--ball);
+  margin-top: calc(var(--ball) / -2);
   will-change: transform;
 }
-.wheel-ball.branca { background: #f5f5f5; }
-.wheel-ball.bronze { background: #cd7f32; color: #2b1400; }
-.wheel-ball.prata { background: #c0c0c0; }
-.wheel-ball.dourada { background: #ffd700; }
-.wheel-ball.preta {
-  background: #111;
-  color: #ffd700;
-  border: 1px solid #333;
+
+/* Bolas: esfera 3D em CSS (gradiente radial + brilho especular + emblema) */
+.ball {
+  --hl: #fff;
+  --base: #f1f1f1;
+  --shade: #b5b5b5;
+  --emblem: #111;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  position: relative;
+  background: radial-gradient(circle at 32% 28%, var(--hl) 0%, var(--base) 38%, var(--shade) 100%);
+  box-shadow:
+    inset -8px -10px 18px rgba(0, 0, 0, 0.35),
+    inset 6px 6px 14px rgba(255, 255, 255, 0.35),
+    0 18px 20px -10px rgba(0, 0, 0, 0.6);
+  opacity: 0.88;
+  filter: blur(1.2px);
+  transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease, box-shadow 0.25s ease;
 }
-.wheel-ball.winner {
-  box-shadow: 0 0 0 3px var(--gold), 0 0 26px 8px rgba(255, 215, 0, 0.8);
+.ball::before { /* brilho especular */
+  content: "";
+  position: absolute;
+  top: 8%;
+  left: 18%;
+  width: 38%;
+  height: 22%;
+  border-radius: 50%;
+  background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+  filter: blur(2px);
+  transform: rotate(-20deg);
+}
+.ball::after { /* reflexo no chão */
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -15%;
+  height: 20%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55), transparent 70%);
+  filter: blur(3px);
+}
+.ball .emblem {
+  position: absolute;
+  inset: 30%;
+  color: var(--emblem);
+  opacity: 0.85;
+}
+.ball.b-branca { --hl: #ffffff; --base: #f1f1f1; --shade: #b5b5b5; --emblem: #111111; }
+.ball.b-bronze { --hl: #f0a463; --base: #d9772b; --shade: #7a360e; --emblem: #ffffff; }
+.ball.b-prata  { --hl: #f4f6f8; --base: #c3c8ce; --shade: #5f656d; --emblem: #111111; }
+.ball.b-dourada{ --hl: #fff0a0; --base: #f2c230; --shade: #8f6a05; --emblem: #111111; }
+.ball.b-preta  { --hl: #6a6a70; --base: #25252a; --shade: #030304; --emblem: #ffffff; }
+
+/* Bola sob o marcador: escala, brilho, foco */
+.ball.center {
+  transform: scale(1.15);
+  opacity: 1;
+  filter: none;
+  z-index: 2;
+}
+.ball.winner {
+  box-shadow:
+    inset -8px -10px 18px rgba(0, 0, 0, 0.35),
+    inset 6px 6px 14px rgba(255, 255, 255, 0.35),
+    0 0 0 3px var(--gold),
+    0 0 34px 10px rgba(255, 215, 0, 0.75);
   z-index: 3;
 }
-.wheel-pointer {
+
+/* Marcador central: anel fino com 4 miras */
+.marker {
   position: absolute;
-  top: -4px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-top: 20px solid var(--red-bright);
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8));
-  z-index: 4;
-}
-.wheel-center {
-  position: absolute;
-  inset: 33%;
+  top: 50%;
+  width: calc(var(--ball) * 1.25);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: 50%;
-  background: radial-gradient(circle, #26263a, #101018);
-  border: 2px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  font-size: 12px;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.3), inset 0 0 14px rgba(255, 255, 255, 0.12);
 }
+.marker .m {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+}
+.marker .m-n { top: -9px; left: 50%; width: 2px; height: 13px; transform: translateX(-50%); }
+.marker .m-s { bottom: -9px; left: 50%; width: 2px; height: 13px; transform: translateX(-50%); }
+.marker .m-e { right: -9px; top: 50%; height: 2px; width: 13px; transform: translateY(-50%); }
+.marker .m-w { left: -9px; top: 50%; height: 2px; width: 13px; transform: translateY(-50%); }
 
 /* partículas do vencedor */
 .particles {
@@ -576,11 +668,32 @@ label.field input:focus {
   flex: none;
   box-shadow: inset 0 -3px 4px rgba(0, 0, 0, 0.4), inset 0 3px 4px rgba(255, 255, 255, 0.5);
 }
-.legend-dot.branca { background: #f5f5f5; border: 1px solid #bbb; }
-.legend-dot.bronze { background: #cd7f32; }
-.legend-dot.prata { background: #c0c0c0; }
-.legend-dot.dourada { background: #ffd700; }
-.legend-dot.preta { background: #111; border: 1px solid #444; }
+.legend-dot.branca { background: radial-gradient(circle at 32% 28%, #ffffff, #f1f1f1 40%, #b5b5b5); border: 1px solid #bbb; }
+.legend-dot.bronze { background: radial-gradient(circle at 32% 28%, #f0a463, #d9772b 40%, #7a360e); }
+.legend-dot.prata { background: radial-gradient(circle at 32% 28%, #f4f6f8, #c3c8ce 40%, #5f656d); }
+.legend-dot.dourada { background: radial-gradient(circle at 32% 28%, #fff0a0, #f2c230 40%, #8f6a05); }
+.legend-dot.preta { background: radial-gradient(circle at 32% 28%, #6a6a70, #25252a 40%, #030304); border: 1px solid #444; }
+
+/* ---------- Modo Consciência (educativo) ---------- */
+.conscience {
+  margin-top: 16px;
+  border-color: var(--gold-dim);
+}
+.conscience-tip {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.balance-chart {
+  width: 100%;
+  height: auto;
+  margin-top: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
 .legend-item .legend-name { flex: 1; font-weight: 600; }
 .legend-item .legend-prob { color: var(--muted); }
 
