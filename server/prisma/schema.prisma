@@ -1,0 +1,61 @@
+// Fonte de verdade do schema de dados da DEMO.
+// Saldos e apostas são inteiros em CENTÉSIMOS de crédito.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  role         String    @default("player") // "admin" | "player"
+  balance      Int // centésimos de crédito (inteiro; nunca negativo)
+  createdAt    DateTime  @default(now())
+  rounds       Round[]
+
+  @@map("users")
+}
+
+model Round {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  bet            Int // aposta original em centésimos (nas tentativas grátis, referência; nada é debitado)
+  ball           String // "branca" | "bronze" | "prata" | "dourada" | "preta"
+  multiplier     Int // centésimos do multiplicador (150 = 1.5x)
+  payout         Int // retorno TOTAL da rodada em centésimos (já inclui a aposta)
+  isFreeSpin     Boolean  @default(false)
+  parentRoundId  Int?
+  rngSeed        String? // identificador de auditoria do sorteio (o sorteio usa crypto.randomInt)
+  idempotencyKey String?  @unique // garante que a mesma chave nunca processe duas vezes
+  configVersion  Int // versão da GameConfig usada (auditoria)
+  balanceBefore  Int
+  balanceAfter   Int
+  createdAt      DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  parent  Round?  @relation("RoundTree", fields: [parentRoundId], references: [id])
+  children Round[] @relation("RoundTree")
+
+  @@index([userId, createdAt])
+  @@index([isFreeSpin])
+  @@map("rounds")
+}
+
+model GameConfig {
+  id            Int      @id @default(autoincrement())
+  version       Int      @unique
+  probabilities Json // Record<Ball, partes por 10.000> - soma exatamente 10.000
+  multipliers   Json // Record<Ball, centésimos do multiplicador>
+  minBet        Int // centésimos
+  maxBet        Int // centésimos
+  updatedAt     DateTime @default(now())
+  updatedBy     Int?
+
+  @@map("game_configs")
+}

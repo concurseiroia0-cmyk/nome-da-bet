@@ -1,0 +1,23 @@
+{
+  "name": "nome-da-bet",
+  "version": "1.0.0",
+  "private": true,
+  "description": "[NOME DA BET] - DEMO de apostas com créditos fictícios. Roleta de Bolas. Sem depósito, saque ou pagamento real.",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "postinstall": "node scripts/bootstrap-env.mjs && npm run db:setup -w server",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build -w client && npm run build -w server",
+    "test": "npm run test -w server",
+    "test:server": "npm run test -w server",
+    "test:client": "npm run test -w client",
+    "simulate": "npm run simulate -w server --"
+  }
+}

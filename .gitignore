@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+*.log
+*.tsbuildinfo
+# emit legado do tsc em shared (a fonte é .ts; nada importa esses .js)
+shared/src/*.js
+.env
+.env.local
+server/prisma/*.db
+server/prisma/*.db-journal
+server/prisma/*.db-shm
+server/prisma/*.db-wal
+coverage/
+.DS_Store
